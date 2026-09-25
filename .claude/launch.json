@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vercel-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "vercel dev --yes --listen 0.0.0.0:$PORT"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
