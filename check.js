@@ -17,8 +17,28 @@ function sleep(ms) {
 }
 
 function loadDependencyNames(pkgPath) {
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  let raw;
+  try {
+    raw = readFileSync(pkgPath, "utf8");
+  } catch (err) {
+    console.error(`Could not read ${pkgPath}: ${err.message}`);
+    process.exit(1);
+  }
+
+  let pkg;
+  try {
+    pkg = JSON.parse(raw);
+  } catch (err) {
+    console.error(`Could not parse ${pkgPath} as JSON: ${err.message}`);
+    process.exit(1);
+  }
+
+  const deps = {
+    ...pkg.dependencies,
+    ...pkg.devDependencies,
+    ...pkg.peerDependencies,
+    ...pkg.optionalDependencies,
+  };
   return Object.keys(deps);
 }
 
