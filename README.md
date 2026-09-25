@@ -6,11 +6,15 @@ occasionally invent plausible-sounding package names, and if you install
 whatever they suggest without checking, you can end up depending on nothing
 (or something malicious squatting on that name). This tool checks.
 
+**Live demo:** https://package-hallucination-checker.vercel.app — paste in a
+package.json and get a report back.
+
 ## What it does
 
 Given a `package.json`, it:
 
-1. Reads every entry in `dependencies` and `devDependencies`.
+1. Reads every entry in `dependencies`, `devDependencies`, `peerDependencies`,
+   and `optionalDependencies`.
 2. Looks each one up against the npm registry (`registry.npmjs.org`) to
    confirm it actually exists.
 3. Pulls weekly download counts (`api.npmjs.org`) for anything that does
