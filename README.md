@@ -63,6 +63,24 @@ VERIFIED    typescript
 (`MISSING` renders in red, `VERIFIED` in green in an actual terminal.) The
 tool caught the hallucinated package immediately and exited with status 1.
 
+## Pre-commit hook (optional)
+
+To block commits that introduce a missing package, add this as
+`.git/hooks/pre-commit` (git hooks aren't tracked by git itself, so this
+step is manual per clone):
+
+```bash
+#!/bin/sh
+node check.js
+```
+
+```bash
+chmod +x .git/hooks/pre-commit
+```
+
+Tested by staging a fake dependency and attempting to commit — the hook's
+non-zero exit code aborted the commit before it was created.
+
 ## Why this matters
 
 See the *Verification Discipline* paper for the full argument — the short
