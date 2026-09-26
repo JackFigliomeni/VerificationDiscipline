@@ -1,6 +1,6 @@
-import { extractDependencyNames, checkDependencies, summarize } from "../lib/checker.js";
+import { extractDependencyNames, checkDependencies, summarize, describeResult } from "../lib/checker.js";
 
-const MAX_DEPENDENCIES = 200;
+const MAX_DEPENDENCIES = 120;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -16,19 +16,34 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (!pkg || typeof pkg !== "object") {
+  if (!pkg || typeof pkg !== "object" || Array.isArray(pkg)) {
     res.status(400).json({ error: "Body must be a package.json object" });
     return;
   }
 
-  const names = extractDependencyNames(pkg);
+  let names;
+  try {
+    names = extractDependencyNames(pkg);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+    return;
+  }
+
   if (names.length > MAX_DEPENDENCIES) {
     res.status(400).json({ error: `Too many dependencies (${names.length}); max is ${MAX_DEPENDENCIES}` });
     return;
   }
 
-  const results = await checkDependencies(names);
-  const summary = summarize(results);
+  let results;
+  try {
+    results = await checkDependencies(names);
+  } catch (err) {
+    res.status(502).json({ error: `Failed to reach the npm registry: ${err.message}` });
+    return;
+  }
 
-  res.status(200).json({ results, summary });
+  const annotated = results.map((r) => ({ ...r, ...describeResult(r) }));
+  const summary = summarize(results);
+  const status = summary.missing > 0 ? 422 : 200;
+  res.status(status).json({ results: annotated, summary });
 }

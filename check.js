@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { extractDependencyNames, checkDependencies, summarize } from "./lib/checker.js";
+import { extractDependencyNames, checkDependencies, summarize, describeResult, formatSummary } from "./lib/checker.js";
 
 const COLOR = {
   green: "\x1b[32m",
@@ -8,6 +8,18 @@ const COLOR = {
   cyan: "\x1b[36m",
   reset: "\x1b[0m",
 };
+
+const COLOR_BY_STATUS = {
+  verified: COLOR.green,
+  "low-trust": COLOR.yellow,
+  unknown: COLOR.cyan,
+  missing: COLOR.red,
+};
+
+function sanitizeForTerminal(str) {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\x00-\x1f\x7f]/g, "");
+}
 
 function loadPackageJson(pkgPath) {
   let raw;
@@ -26,32 +38,36 @@ function loadPackageJson(pkgPath) {
   }
 }
 
-function printResult({ name, status, downloads }) {
-  if (status === "verified") {
-    console.log(`${COLOR.green}VERIFIED${COLOR.reset}    ${name}`);
-  } else if (status === "low-trust") {
-    console.log(`${COLOR.yellow}LOW-TRUST${COLOR.reset}   ${name}  (${downloads} weekly downloads)`);
-  } else if (status === "unknown") {
-    console.log(`${COLOR.cyan}UNKNOWN${COLOR.reset}     ${name}  (exists, but download count unavailable)`);
-  } else {
-    console.log(`${COLOR.red}MISSING${COLOR.reset}     ${name}`);
-  }
+function printResult(result) {
+  const { label, detail } = describeResult(result);
+  const color = COLOR_BY_STATUS[result.status];
+  const name = sanitizeForTerminal(result.name);
+  const suffix = detail ? `  (${detail})` : "";
+  console.log(`${color}${label.padEnd(10)}${COLOR.reset}${name}${suffix}`);
 }
 
 async function main() {
   const pkgPath = process.argv[2] ?? "package.json";
   const pkg = loadPackageJson(pkgPath);
-  const names = extractDependencyNames(pkg);
+
+  let names;
+  try {
+    names = extractDependencyNames(pkg);
+  } catch (err) {
+    console.error(`Invalid ${pkgPath}: ${err.message}`);
+    process.exit(1);
+  }
 
   const results = await checkDependencies(names);
   results.forEach(printResult);
 
-  const { verified, lowTrust, missing, unknown } = summarize(results);
-  const summary = [`${verified} verified`, `${lowTrust} low-trust`, `${missing} missing`];
-  if (unknown > 0) summary.push(`${unknown} unknown`);
-  console.log(`\n${summary.join(", ")}`);
+  const summary = summarize(results);
+  console.log(`\n${formatSummary(summary)}`);
 
-  if (missing > 0) process.exit(1);
+  if (summary.missing > 0) process.exit(1);
 }
 
-main();
+main().catch((err) => {
+  console.error(`Failed to check dependencies: ${err.message}`);
+  process.exit(1);
+});
