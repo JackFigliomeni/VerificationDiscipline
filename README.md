@@ -87,8 +87,13 @@ non-zero exit code aborted the commit before it was created.
 
 ## Why this matters
 
-See the *Verification Discipline* paper for the full argument — the short
-version is that AI coding assistants will occasionally suggest a package
-that doesn't exist, and the failure mode isn't "the build breaks," it's
-"someone squats the name with something malicious before you notice." This
-tool is the minimum viable check against that.
+This tool is the reference implementation for:
+
+> Jack Figliomeni, "Verification Discipline: Catching and Correcting
+> Hallucinations in AI Coding Agents: A Practical Framework" (2026)
+
+See the paper for the full argument — the short version is that AI coding
+assistants will occasionally suggest a package that doesn't exist, and the
+failure mode isn't "the build breaks," it's "someone squats the name with
+something malicious before you notice" (a technique the paper's sources call
+"slop squatting"). This tool is the minimum viable check against that.
